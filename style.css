@@ -104,7 +104,6 @@ main {
   position: absolute;
   width: 16px;
   height: 16px; 
-  background-color: #000;
-  right: 0;
+  border: 0.8px solid #000;
 }
 

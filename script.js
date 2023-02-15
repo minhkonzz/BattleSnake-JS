@@ -1,7 +1,5 @@
 // HTML Elements 
 const mainWindowElement = document.getElementById("main-window");
-const listtest = document.getElementsByClassName("snake__dot");
-console.log(listtest);
 
 // initital
 let mainWindowWidth, mainWindowHeight;
@@ -42,10 +40,12 @@ class Square extends Point {
 }
 
 class Snake {
-  constructor(direction = "RIGHT", type, startPoint) {
+  constructor(startPoint, type, direction = "RIGHT") {
     this.setDirection(direction);
     this.setType(type);
-    this.body = [ new Square(startPoint.x, startPoint.y, snakeDotSize / 2) ];
+    const t = new Square(startPoint.x, startPoint.y, snakeDotSize / 2);
+    this.body = [ t ];
+    console.log("body:", this.body);
   }
 
   setDirection(direction) {
@@ -102,7 +102,7 @@ class Snake {
 
   updateSnakeDots(axis, speed) {
     const currentBody = this.body; 
-    for (let i = currentBody.length - 1; i >= 0; i++) {
+    for (let i = currentBody.length - 1; i >= 0; i--) {
       if (i > 0) currentBody[i].setCoord(currentBody[i - 1].x, currentBody[i - 1].y);
       else {
         if (axis === "X") currentBody[i].setCoord(currentBody[i].x + speed, currentBody[i].y); 
@@ -113,18 +113,22 @@ class Snake {
 
   checkDirection() {
     switch (this.direction) {
-      case "UP":
+      case "UP": {
         this.updateSnakeDots("Y", -snakeDotSize);
         break;
-      case "DOWN":
+      }
+      case "DOWN": {
         this.updateSnakeDots("Y", snakeDotSize);
         break;
-      case "LEFT":
+      }
+      case "LEFT": {
         this.updateSnakeDots("X", -snakeDotSize);
         break;
-      case "RIGHT":
+      }
+      case "RIGHT": {
         this.updateSnakeDots("X", snakeDotSize);
         break;
+      }
     }
   }
 
@@ -219,9 +223,23 @@ class Game {
     this.run();
   }
   run() {
-
+    const startPoint = {
+      x: 50, 
+      y: 50
+    }
+    const fs = new Snake(startPoint, "FIRE_SNAKE"); 
+    fs.checkDirection();
+    const fsElement = document.querySelector(".snake.fs");
+    const fsDotElement = document.createElement("li");
+    fsDotElement.setAttribute("class", "snake__dot"); 
+    fsDotElement.style.setProperty("background-color", "red");
+    fsDotElement.style.setProperty("top", `${fs.body[0].y}px`); 
+    fsDotElement.style.setProperty("left", `${fs.body[0].x}px`);
+    fsElement.appendChild(fsDotElement); 
   }
 }
+
+const game = new Game();
 
 
 
