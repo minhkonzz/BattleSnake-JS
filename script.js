@@ -1,7 +1,5 @@
-// HTML Elements 
 const mainWindowElement = document.getElementById("main-window");
 
-// initital
 let mainWindowWidth, mainWindowHeight;
 window.addEventListener("resize", function() {
   const { offsetWidth, offsetHeight } = mainWindowElement;
@@ -11,9 +9,26 @@ window.addEventListener("resize", function() {
 
 const snakeDotSize = 16; 
 
-// functions 
-function DOMUpdates_SnakeDots(snakeInstance, elements) {
+function renderSnakeDots(snakeInstance, snakeElement) {
+  const snakeDotElements = snakeElement.children; 
+  const snakeBody = snakeInstance.body; 
+  for (let i = 0; i < snakeBody.length; i++) {
+    snakeDotElements[i].style.setProperty("top", `${snakeBody[i].y}px`); 
+    snakeDotElements[i].style.setProperty("left", `${snakeBody[i].x}px`); 
+  }
+  return snakeDotElements;
+}
 
+function createNewSnakeDot(snakeType, position) {
+  const { x, y } = position;
+  const fsDotElement = document.createElement("li"); 
+  fsDotElement.setAttribute("class", "snake__dot"); 
+  fsDotElement.style.setProperty("width", `${snakeDotSize}px`);
+  fsDotElement.style.setProperty("height", `${snakeDotSize}px`);
+  fsDotElement.style.setProperty("top", `${y}px`);
+  fsDotElement.style.setProperty("left", `${x}px`);
+  fsDotElement.style.setProperty("background-color", snakeType === "FIRE_SNAKE" ? "red" : "blue");
+  return fsDotElement;
 }
 
 // classes
@@ -223,19 +238,25 @@ class Game {
     this.run();
   }
   run() {
+    let intervalID;
+    const limitLoop = 8;
+    let init = 0;
     const startPoint = {
       x: 50, 
       y: 50
     }
-    const fs = new Snake(startPoint, "FIRE_SNAKE"); 
-    fs.checkDirection();
+    const fs = new Snake(startPoint, "FIRE_SNAKE");
     const fsElement = document.querySelector(".snake.fs");
-    const fsDotElement = document.createElement("li");
-    fsDotElement.setAttribute("class", "snake__dot"); 
-    fsDotElement.style.setProperty("background-color", "red");
-    fsDotElement.style.setProperty("top", `${fs.body[0].y}px`); 
-    fsDotElement.style.setProperty("left", `${fs.body[0].x}px`);
-    fsElement.appendChild(fsDotElement); 
+    fsElement.appendChild(createNewSnakeDot(fs.type, { x: fs.body[0].x, y: fs.body[0].y }));  
+    intervalID = setInterval(() => {
+      if (init === limitLoop) {
+        clearInterval(intervalID); 
+        return; 
+      }
+      fs.checkDirection();
+      renderSnakeDots(fs, fsElement);
+      init++;
+    }, 200);
   }
 }
 

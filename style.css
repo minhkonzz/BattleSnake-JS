@@ -102,8 +102,6 @@ main {
 
 .snake__dot {
   position: absolute;
-  width: 16px;
-  height: 16px; 
   border: 0.8px solid #000;
 }
 
