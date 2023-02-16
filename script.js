@@ -1,6 +1,9 @@
 const mainWindowElement = document.getElementById("main-window");
+const fsElement = document.querySelector(".snake.fs");
+const wsElement = document.querySelector(".snake.ws"); 
 
-let mainWindowWidth, mainWindowHeight;
+const { offsetWidth, offsetHeight } = mainWindowElement;
+let mainWindowWidth = offsetWidth, mainWindowHeight = offsetHeight;
 window.addEventListener("resize", function() {
   const { offsetWidth, offsetHeight } = mainWindowElement;
   mainWindowWidth = offsetWidth; 
@@ -8,11 +11,19 @@ window.addEventListener("resize", function() {
 });
 
 const snakeDotSize = 16; 
+const snakeDotHalfSize = snakeDotSize / 2; 
+const foodSize = 14;
+const foodHalfSize = foodSize / 2;
+
+function randInRange(low, high, isMustEven = false) {
+  const rand = Math.floor(Math.random() * (high - low + 1)) + low;
+  return !isMustEven ? rand : (rand % 2 === 0 ? rand : rand + 1);
+}
 
 function renderSnakeDots(snakeInstance, snakeElement) {
   const snakeDotElements = snakeElement.children; 
   const snakeBody = snakeInstance.body; 
-  for (let i = 0; i < snakeBody.length; i++) {
+  for (let i = 0; i < snakeDotElements.length; i++) {
     snakeDotElements[i].style.setProperty("top", `${snakeBody[i].y}px`); 
     snakeDotElements[i].style.setProperty("left", `${snakeBody[i].x}px`); 
   }
@@ -38,8 +49,8 @@ class Point {
   } 
 
   setCoord(x, y) {
-    this.x = x >= 0 ? x : 10; 
-    this.y = y >= 0 ? y : 10;
+    this.x = x;
+    this.y = y;
   }
 }
 
@@ -55,46 +66,53 @@ class Square extends Point {
 }
 
 class Snake {
-  constructor(startPoint, type, direction = "RIGHT") {
+  constructor(startPoint, snakeElement, type, direction = "RIGHT") {
+    this.snakeElement = snakeElement;
     this.setDirection(direction);
     this.setType(type);
-    const t = new Square(startPoint.x, startPoint.y, snakeDotSize / 2);
+    const t = new Square(startPoint.x, startPoint.y, snakeDotHalfSize);
     this.body = [ t ];
-    console.log("body:", this.body);
   }
 
   setDirection(direction) {
-    if (this.direction !== direction && (direction === "UP" || direction === "DOWN" || direction === "LEFT" || direction === "RIGHT"))
-      this.direction = direction;
+    if (this.direction !== direction && (direction === "UP" || direction === "DOWN" || direction === "LEFT" || direction === "RIGHT")) this.direction = direction;
   }
 
   setType(type) {
-    if (type === "FIRE_SNAKE" || type === "WATER_SNAKE")
-      this.type = type;
+    if (type === "FIRE_SNAKE" || type === "WATER_SNAKE") this.type = type;
   }
 
   catchFood(food) {
-    const score = Math.round(food.radius * 0.5 - 1);
     const currentBody = this.body;
+    const { x: xHead, y: yHead } = currentBody[0];
+    if ((Math.abs(xHead - food.x) > 10) || (Math.abs(yHead - food.y) > 10)) return;
+    const snakeType = this.type;
+    const score = Math.round(food.radius * 0.5 - 1);
     const snakeSize = currentBody.length;
     if (snakeSize === 1) {
       const currentDirection = this.direction;
       if (currentDirection === "UP" || currentDirection === "DOWN") { 
         for (let i = 1; i <= score; i++) { 
-          this.body.push(new Square(
+          const newSnakeDot = new Square(
             currentBody[i - 1].x, 
             currentBody[i - 1].y + (currentDirection === "UP" ? snakeDotSize : -snakeDotSize), 
             snakeDotSize / 2
-          ));
+          )
+          const newSnakeDotElement = createNewSnakeDot(snakeType, { x: newSnakeDot.x, y: newSnakeDot.y });
+          this.body.push(newSnakeDot);
+          this.snakeElement.appendChild(newSnakeDotElement);
         }
       }
       else {
         for (let i = 1; i <= score; i++) {  
-          this.body.push(new Square(
+          const newSnakeDot = new Square(
             currentBody[i - 1].x + (currentDirection === "LEFT" ? snakeDotSize : -snakeDotSize),
             currentBody[i - 1].y, 
             snakeDotSize / 2
-          ));
+          )
+          const newSnakeDotElement = createNewSnakeDot(snakeType, { x: newSnakeDot.x, y: newSnakeDot.y });
+          this.body.push(newSnakeDot);
+          this.snakeElement.appendChild(newSnakeDotElement);
         }
       }
     }
@@ -104,15 +122,22 @@ class Snake {
       const ldy = currentBody[lastSnakeDotIndex - 1].y - currentBody[lastSnakeDotIndex].y;
       if ((ldy > 0 && ldx === 0) || (ldy < 0 && ldx === 0)) {
         for (let i = snakeSize; i < snakeSize + score; i++) {
-	        this.body.push(new Square(currentBody[i - 1].x, currentBody[i - 1].y + (ldy > 0 ? -snakeDotSize : snakeDotSize), snakeDotSize / 2));
+          const newSnakeDot = new Square(currentBody[i - 1].x, currentBody[i - 1].y + (ldy > 0 ? -snakeDotSize : snakeDotSize), snakeDotHalfSize)
+          const newSnakeDotElement = createNewSnakeDot(snakeType, { x: newSnakeDot.x, y: newSnakeDot.y });
+          this.body.push(newSnakeDot);
+          this.snakeElement.appendChild(newSnakeDotElement);
         }
       }
       else if ((ldx > 0 && ldy === 0) || (ldx < 0 && ldy === 0)) {
         for (let i = snakeSize; i < snakeSize + score; i++) {
-	        this.body.push(new Square(currentBody[i - 1].x + (ldx > 0 ? -snakeDotSize : snakeDotSize), currentBody[i - 1].y, snakeDotSize / 2));
+          const newSnakeDot = new Square(currentBody[i - 1].x + (ldx > 0 ? -snakeDotSize : snakeDotSize), currentBody[i - 1].y, snakeDotHalfSize);
+          const newSnakeDotElement = createNewSnakeDot(snakeType, { x: newSnakeDot.x, y: newSnakeDot.y });
+          this.body.push(newSnakeDot);
+          this.snakeElement.appendChild(newSnakeDotElement);
         }
       }
     }
+
   }
 
   updateSnakeDots(axis, speed) {
@@ -167,7 +192,6 @@ class Snake {
   isHitWall() {
     const { body, direction } = this;
     const { x: xHead, y: yHead } = body[0];
-    const snakeDotHalfSize = snakeDotSize / 2; 
     return (
       (xHead - snakeDotHalfSize <= -0.01 && direction === "LEFT") || 
       (xHead + snakeDotHalfSize >= mainWindowWidth && direction === "RIGHT") || 
@@ -199,7 +223,7 @@ class Snake {
     const enemySnakeBody = enemySnake.body; 
     const enemySnakeBodyLength = enemySnakeBody.length;
     const enemySnakeDirection = enemySnake.direction; 
-    const { x: enemyXHead, y: enemyYHead } = enemySnake[0];
+    const { x: enemyXHead, y: enemyYHead } = enemySnakeBody[0];
     return (
       bodyLength > enemySnakeBodyLength && 
       ((Math.abs(xHead - enemyXHead) < snakeDotSize &&
@@ -238,25 +262,119 @@ class Game {
     this.run();
   }
   run() {
+
     let intervalID;
-    const limitLoop = 8;
-    let init = 0;
-    const startPoint = {
+    let fsLosed, wsLosed; 
+    
+    const FSstartPoint = {
       x: 50, 
       y: 50
     }
-    const fs = new Snake(startPoint, "FIRE_SNAKE");
-    const fsElement = document.querySelector(".snake.fs");
-    fsElement.appendChild(createNewSnakeDot(fs.type, { x: fs.body[0].x, y: fs.body[0].y }));  
+    const fs = new Snake(FSstartPoint, fsElement, "FIRE_SNAKE");
+    fs.snakeElement.appendChild(createNewSnakeDot(fs.type, { x: fs.body[0].x, y: fs.body[0].y }));
+    
+    const WSstartPoint = {
+      x: 350, 
+      y: 350
+    }
+    const ws = new Snake(WSstartPoint, wsElement, "WATER_SNAKE", "LEFT"); 
+    ws.snakeElement.appendChild(createNewSnakeDot(ws.type, { x: ws.body[0].x, y: ws.body[0].y })); 
+
+    let fsCurrentLength = fs.body.length;
+    let wsCurrentLength = ws.body.length;
+
+    const foodStartPoint = {
+      x: 400,
+      y: 400
+    };
+
+    const food = new Square(foodStartPoint.x, foodStartPoint.y, foodSize / 2); 
+    const foodElement = document.getElementById("food"); 
+    foodElement.style.setProperty("width", `${foodSize}px`);
+    foodElement.style.setProperty("height", `${foodSize}px`);
+    foodElement.style.setProperty("top", `${food.y}px`);
+    foodElement.style.setProperty("left", `${food.x}px`);
+    foodElement.style.setProperty("background-color", "#000");
+    mainWindowElement.appendChild(foodElement);
+
+    function listenKeyPress(e) {
+      switch (e.key) {
+        case "ArrowUp": {
+          if (ws.direction !== "UP" && ws.direction !== "DOWN") ws.direction = "UP"; 
+          break;
+        }
+        case "ArrowDown": {
+          if (ws.direction !== "UP" && ws.direction !== "DOWN") ws.direction = "DOWN";
+          break;
+        }
+        case "ArrowLeft": {
+          if (ws.direction !== "LEFT" && ws.direction !== "RIGHT") ws.direction = "LEFT";
+          break;
+        }
+        case "ArrowRight": {
+          if (ws.direction !== "LEFT" && ws.direction !== "RIGHT") ws.direction = "RIGHT";
+          break;
+        }
+        case "w": {
+          if (fs.direction !== "UP" && fs.direction !== "DOWN") fs.direction = "UP"; 
+          break;
+        }
+        case "s": {
+          if (fs.direction !== "UP" && fs.direction !== "DOWN") fs.direction = "DOWN";
+          break;
+        }
+        case "a": {
+          if (fs.direction !== "LEFT" && fs.direction !== "RIGHT") fs.direction = "LEFT";
+          break;
+        }
+        case "d": {
+          if (fs.direction !== "LEFT" && fs.direction !== "RIGHT") fs.direction = "RIGHT";
+          break;
+        }
+      }
+    }
+
+    window.addEventListener("keydown", listenKeyPress);
+
     intervalID = setInterval(() => {
-      if (init === limitLoop) {
+
+      fs.catchFood(food); 
+      if (fs.body.length > fsCurrentLength) {
+        fsCurrentLength = fs.body.length; 
+        food.setCoord(
+          randInRange(30, mainWindowWidth - 100),
+          randInRange(30, mainWindowHeight - 100)
+        );
+        foodElement.style.setProperty("top", `${food.y}px`);
+        foodElement.style.setProperty("left", `${food.x}px`);
+      }
+      else {
+        ws.catchFood(food);
+        if (ws.body.length > wsCurrentLength) {
+          wsCurrentLength = ws.body.length; 
+          food.setCoord(
+            randInRange(30, mainWindowWidth - 100),
+            randInRange(30, mainWindowHeight - 100)
+          );
+          foodElement.style.setProperty("top", `${food.y}px`);
+          foodElement.style.setProperty("left", `${food.x}px`);
+        }
+      }
+
+      wsLosed = ws.isHitWall();
+      fsLosed = fs.isHitWall();
+      if (fsLosed || wsLosed) {
+        if (fsLosed) console.log("fslosed"); 
+        if (wsLosed) console.log("wsLosed");
+        window.removeEventListener("keydown", listenKeyPress);
         clearInterval(intervalID); 
         return; 
       }
       fs.checkDirection();
-      renderSnakeDots(fs, fsElement);
-      init++;
-    }, 200);
+      ws.checkDirection(); 
+      renderSnakeDots(fs, fs.snakeElement);
+      renderSnakeDots(ws, ws.snakeElement); 
+    }, 150);
   }
 }
 

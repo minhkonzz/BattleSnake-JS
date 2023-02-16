@@ -78,7 +78,6 @@ main {
   width: 20px;
   height: 20px;
   border-radius: 10px;
-  border: 1px solid #000;
 }
 
 .main-right__snake__score__color.fire-snake {
@@ -102,6 +101,10 @@ main {
 
 .snake__dot {
   position: absolute;
-  border: 0.8px solid #000;
+  border: 1px solid #000;
+}
+
+#food {
+  position: absolute;
 }
 
