@@ -1,6 +1,10 @@
 const mainWindowElement = document.getElementById("main-window");
 const fsElement = document.querySelector(".snake.fs");
 const wsElement = document.querySelector(".snake.ws"); 
+const alertElement = document.querySelector(".alert-end-game");
+const countdownTimeElement = document.querySelector(".main-right__time__value");
+const fsScoreElement = document.querySelector(".main-right__snake__score__value.fs");
+const wsScoreElement = document.querySelector(".main-right__snake__score__value.ws");
 
 const { offsetWidth, offsetHeight } = mainWindowElement;
 let mainWindowWidth = offsetWidth, mainWindowHeight = offsetHeight;
@@ -38,7 +42,7 @@ function createNewSnakeDot(snakeType, position) {
   fsDotElement.style.setProperty("height", `${snakeDotSize}px`);
   fsDotElement.style.setProperty("top", `${y}px`);
   fsDotElement.style.setProperty("left", `${x}px`);
-  fsDotElement.style.setProperty("background-color", snakeType === "FIRE_SNAKE" ? "red" : "blue");
+  fsDotElement.style.setProperty("background-color", snakeType === "FIRE_SNAKE" ? "var(--fire-snake-color)" : "var(--water-snake-color)");
   return fsDotElement;
 }
 
@@ -193,10 +197,10 @@ class Snake {
     const { body, direction } = this;
     const { x: xHead, y: yHead } = body[0];
     return (
-      (xHead - snakeDotHalfSize <= -0.01 && direction === "LEFT") || 
-      (xHead + snakeDotHalfSize >= mainWindowWidth && direction === "RIGHT") || 
-      (yHead - snakeDotHalfSize <= -0.01 && direction === "UP") ||
-      (yHead + snakeDotHalfSize >= mainWindowHeight && direction === "DOWN") 
+      (xHead - snakeDotHalfSize <= 0 && direction === "LEFT") || 
+      (xHead + snakeDotHalfSize >=(mainWindowWidth - snakeDotHalfSize) && direction === "RIGHT") || 
+      (yHead - snakeDotHalfSize <= 0 && direction === "UP") ||
+      (yHead + snakeDotHalfSize >= (mainWindowHeight - snakeDotHalfSize) && direction === "DOWN") 
     );
   }
 
@@ -226,12 +230,9 @@ class Snake {
     const { x: enemyXHead, y: enemyYHead } = enemySnakeBody[0];
     return (
       bodyLength > enemySnakeBodyLength && 
-      ((Math.abs(xHead - enemyXHead) < snakeDotSize &&
-        yHead === enemyYHead && 
-        ((direction === "LEFT" && enemySnakeDirection === "RIGHT") || (direction === "RIGHT" && enemySnakeDirection === "LEFT"))) || 
-        (Math.abs(yHead - enemyYHead) < snakeDotSize &&
-        xHead === enemyXHead && 
-        ((direction === "UP" && enemySnakeDirection === "DOWN") || (direction === "DOWN" && enemySnakeDirection === "UP"))))
+      Math.abs(xHead - enemyXHead) < snakeDotSize && 
+      Math.abs(yHead - enemyYHead) < snakeDotSize && 
+      ((direction === "LEFT" && enemySnakeDirection === "RIGHT") || (direction === "RIGHT" && enemySnakeDirection === "LEFT") || (direction === "UP" && enemySnakeDirection === "DOWN") || (direction === "DOWN" && enemySnakeDirection === "UP"))
     );
   }
 }
@@ -242,18 +243,12 @@ class CountdownTimer {
       this.s = s;
   }
   handleCountdown() {
-    let intervalID = setInterval(() => {
-      if (this.m === 0 && this.s === 0) {
-        clearInterval(intervalID);
-        return;
-      }
-      if (this.s === 0) {
-        this.s = 59;
-        this.m -= 1;
-        return;
-      }
-      this.s -= 1;
-    }, 1000);
+    if (this.s === 0) {
+      this.s = 59;
+      this.m -= 1;
+      return;
+    }
+    this.s -= 1;
   }
 }
 
@@ -263,7 +258,7 @@ class Game {
   }
   run() {
 
-    let intervalID;
+    let mainIntervalID, timeIntervalID;
     let fsLosed, wsLosed; 
     
     const FSstartPoint = {
@@ -288,13 +283,13 @@ class Game {
       y: 400
     };
 
-    const food = new Square(foodStartPoint.x, foodStartPoint.y, foodSize / 2); 
+    const food = new Square(foodStartPoint.x, foodStartPoint.y, foodHalfSize); 
     const foodElement = document.getElementById("food"); 
     foodElement.style.setProperty("width", `${foodSize}px`);
     foodElement.style.setProperty("height", `${foodSize}px`);
     foodElement.style.setProperty("top", `${food.y}px`);
     foodElement.style.setProperty("left", `${food.x}px`);
-    foodElement.style.setProperty("background-color", "#000");
+    foodElement.style.setProperty("background-color", "#fff");
     mainWindowElement.appendChild(foodElement);
 
     function listenKeyPress(e) {
@@ -336,10 +331,25 @@ class Game {
 
     window.addEventListener("keydown", listenKeyPress);
 
-    intervalID = setInterval(() => {
+    const timer = new CountdownTimer(1, 10);
+    timeIntervalID = setInterval(() => {
+      const minutes = timer.m < 10 ? `0${timer.m}` : timer.m;
+      const seconds = timer.s < 10 ? `0${timer.s}` : timer.s;
+      countdownTimeElement.innerHTML = `${minutes}:${seconds}`;
+      if (timer.m === 0 && timer.s === 0) {
+        alertElement.style.setProperty("display", "flex");
+        alertElement.innerHTML = fs.body.length > ws.body.length ? "FIRE SNAKE WIN" : (fs.body.length < ws.body.length ? "WATER SNAKE WIN" : "DRAW");
+        clearInterval(timeIntervalID);
+        clearInterval(mainIntervalID);
+        return;
+      }
+      timer.handleCountdown();
+    }, 1000);
 
+    mainIntervalID = setInterval(() => {
       fs.catchFood(food); 
       if (fs.body.length > fsCurrentLength) {
+        fsScoreElement.innerHTML = fs.body.length.toString();
         fsCurrentLength = fs.body.length; 
         food.setCoord(
           randInRange(30, mainWindowWidth - 100),
@@ -351,6 +361,7 @@ class Game {
       else {
         ws.catchFood(food);
         if (ws.body.length > wsCurrentLength) {
+          wsScoreElement.innerHTML = ws.body.length.toString();
           wsCurrentLength = ws.body.length; 
           food.setCoord(
             randInRange(30, mainWindowWidth - 100),
@@ -361,20 +372,21 @@ class Game {
         }
       }
 
-      wsLosed = ws.isHitWall();
-      fsLosed = fs.isHitWall();
+      wsLosed = fs.isEatAnother(ws) || ws.isHitWall() || ws.isHitItself() || ws.isHitAnother(fs);
+      fsLosed = ws.isEatAnother(fs) || fs.isHitWall() || fs.isHitItself() || fs.isHitAnother(ws);
       if (fsLosed || wsLosed) {
-        if (fsLosed) console.log("fslosed"); 
-        if (wsLosed) console.log("wsLosed");
+        alertElement.style.setProperty("display", "flex");
+        alertElement.innerHTML = fsLosed ? "WATER SNAKE WIN" : "FIRE SNAKE WIN";
         window.removeEventListener("keydown", listenKeyPress);
-        clearInterval(intervalID); 
+        clearInterval(timeIntervalID);
+        clearInterval(mainIntervalID); 
         return; 
       }
       fs.checkDirection();
       ws.checkDirection(); 
       renderSnakeDots(fs, fs.snakeElement);
       renderSnakeDots(ws, ws.snakeElement); 
-    }, 150);
+    }, 100);
   }
 }
 

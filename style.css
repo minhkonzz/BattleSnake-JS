@@ -5,6 +5,7 @@
   padding: 0; 
   box-sizing: border-box;
   font-family: "Press Start 2P", sans-serif;
+  color: #fff;
 }
 
 html {
@@ -12,19 +13,16 @@ html {
 }
 
 :root {
+  --fire-snake-color: rgb(241, 84, 84);
+  --water-snake-color: rgb(0, 187, 255);
   --snake-speed: .5s ease;
 }
 
-#snake {
-  display: inline-block;
-  background-color: #000;
-  width: 50px;
-  height: 50px;
-}
-
 main {
+  position: relative;
   display: grid;
   grid-template-columns: 2.5fr 1fr;
+  background-image: linear-gradient(to right bottom, #030e1d, #121722, #1c1f27, #26272d, #2f2f32);
 }
 
 .main-left, 
@@ -36,12 +34,30 @@ main {
   padding: 30px;
 }
 
+.snake-head__img {
+  width: 30px;
+  height: 30px;
+}
+
 .main-right {
   padding: 75px 0;
 }
 
 .main-right > * {
   text-align: center;
+}
+
+.main-right__game-title {
+  color: rgb(122, 255, 255);
+}
+
+.main-right__game-logo {
+  margin-top: 40px;
+}
+
+.main-right__game-logo img {
+  width: 150px;
+  height: 150px;
 }
 
 .main-right__time {
@@ -81,30 +97,51 @@ main {
 }
 
 .main-right__snake__score__color.fire-snake {
-  background-color: red;
+  background-color: var(--fire-snake-color);
 }
 
 .main-right__snake__score__color.water-snake {
-  background-color: blue;
+  background-color: var(--water-snake-color);
 }
 
 #main-window {
   position: relative;
-  border: 1px solid #000;
+  border-radius: 7px;
+  border: 5px solid #a8a8a8;
   width: 100%;
   height: 100%;
 }
 
 .snake {
   list-style: none;
+  position: absolute;
 }
 
 .snake__dot {
   position: absolute;
   border: 1px solid #000;
+  border-radius: 3px;
 }
 
 #food {
   position: absolute;
+  border-radius: 50%;
+}
+
+.alert-end-game {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 120px;
+  font-weight: 600;
+  background-color: #fff;
+  color: #000;
+  font-size: 20px;
+  border-radius: 18px;
 }
 
