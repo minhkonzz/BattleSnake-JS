@@ -16,8 +16,6 @@ window.addEventListener("resize", function() {
 
 const snakeDotSize = 16; 
 const snakeDotHalfSize = snakeDotSize / 2; 
-const foodSize = 14;
-const foodHalfSize = foodSize / 2;
 
 function randInRange(low, high, isMustEven = false) {
   const rand = Math.floor(Math.random() * (high - low + 1)) + low;
@@ -36,14 +34,15 @@ function renderSnakeDots(snakeInstance, snakeElement) {
 
 function createNewSnakeDot(snakeType, position) {
   const { x, y } = position;
-  const fsDotElement = document.createElement("li"); 
-  fsDotElement.setAttribute("class", "snake__dot"); 
-  fsDotElement.style.setProperty("width", `${snakeDotSize}px`);
-  fsDotElement.style.setProperty("height", `${snakeDotSize}px`);
-  fsDotElement.style.setProperty("top", `${y}px`);
-  fsDotElement.style.setProperty("left", `${x}px`);
-  fsDotElement.style.setProperty("background-color", snakeType === "FIRE_SNAKE" ? "var(--fire-snake-color)" : "var(--water-snake-color)");
-  return fsDotElement;
+  const snakeDotElement = document.createElement("li"); 
+  snakeDotElement.setAttribute("class", "snake__dot"); 
+  snakeDotElement.style.setProperty("width", `${snakeDotSize}px`);
+  snakeDotElement.style.setProperty("height", `${snakeDotSize}px`);
+  snakeDotElement.style.setProperty("top", `${y}px`);
+  snakeDotElement.style.setProperty("left", `${x}px`);
+  snakeDotElement.style.setProperty("z-index", 1);
+  snakeDotElement.style.setProperty("background-color", snakeType === "FIRE_SNAKE" ? "var(--fire-snake-color)" : "var(--water-snake-color)");
+  return snakeDotElement;
 }
 
 // classes
@@ -208,16 +207,23 @@ class Snake {
     const enemySnakeBody = enemySnake.body;
     const { body, direction } = this;
     const { x: xHead, y: yHead } = body[0];
-    return !!enemySnakeBody.find((snakeDot) => (
-      (((direction === "LEFT" && xHead - snakeDot.x > 0) || 
-        (direction === "RIGHT" && xHead - snakeDot.x < 0)) &&
-        Math.abs(xHead - snakeDot.x) < snakeDotSize && 
-        yHead === snakeDot.y) ||
-      (((direction === "UP" && yHead - snakeDot.y > 0) || 
-        (direction === "DOWN" && yHead - snakeDot.y < 0)) &&
-        Math.abs(yHead - snakeDot.y) < snakeDotSize && 
-        xHead === snakeDot.x)
-    ));
+    for (let i = 0; i < enemySnakeBody.length; i++) {
+      if (((direction === "LEFT" && xHead - enemySnakeBody[i].x > 0) || (direction === "RIGHT" && xHead - enemySnakeBody[i].x < 0)) && Math.abs(xHead - enemySnakeBody[i].x) < snakeDotSize + 3 && Math.abs(yHead - enemySnakeBody[i].y) < snakeDotSize + 3)
+        return true;
+      if (((direction === "UP" && yHead - enemySnakeBody[i].y > 0) || (direction === "DOWN" && yHead - enemySnakeBody[i].y < 0)) && Math.abs(yHead - enemySnakeBody[i].y) < snakeDotSize + 3 && Math.abs(xHead - enemySnakeBody[i].x) < snakeDotSize + 3)
+        return true;
+    }
+    return false;
+    // return !!enemySnakeBody.find((snakeDot) => (
+    //   (((direction === "LEFT" && xHead - snakeDot.x > 0) || 
+    //     (direction === "RIGHT" && xHead - snakeDot.x < 0)) &&
+    //     Math.abs(xHead - snakeDot.x) < snakeDotSize && 
+    //     Math.abs(yHead - snakeDot.y) < snakeDotSize) ||
+    //   (((direction === "UP" && yHead - snakeDot.y > 0) || 
+    //     (direction === "DOWN" && yHead - snakeDot.y < 0)) &&
+    //     Math.abs(yHead - snakeDot.y) < snakeDotSize && 
+    //     Math.abs(xHead - snakeDot.x) < snakeDotSize)
+    // ));
   }
 
   isEatAnother(enemySnake) {
@@ -283,10 +289,10 @@ class Game {
       y: 400
     };
 
-    const food = new Square(foodStartPoint.x, foodStartPoint.y, foodHalfSize); 
+    const food = new Square(foodStartPoint.x, foodStartPoint.y, randInRange(4, 12)); 
     const foodElement = document.getElementById("food"); 
-    foodElement.style.setProperty("width", `${foodSize}px`);
-    foodElement.style.setProperty("height", `${foodSize}px`);
+    foodElement.style.setProperty("width", `${food.radius * 2}px`);
+    foodElement.style.setProperty("height", `${food.radius * 2}px`);
     foodElement.style.setProperty("top", `${food.y}px`);
     foodElement.style.setProperty("left", `${food.x}px`);
     foodElement.style.setProperty("background-color", "#fff");
@@ -351,10 +357,14 @@ class Game {
       if (fs.body.length > fsCurrentLength) {
         fsScoreElement.innerHTML = fs.body.length.toString();
         fsCurrentLength = fs.body.length; 
+        const newFoodRadius = randInRange(4, 12);
         food.setCoord(
           randInRange(30, mainWindowWidth - 100),
-          randInRange(30, mainWindowHeight - 100)
+          randInRange(30, mainWindowHeight - 100)   
         );
+        food.setRadius(newFoodRadius);
+        foodElement.style.setProperty("width", `${food.radius * 2}px`);
+        foodElement.style.setProperty("height", `${food.radius * 2}px`);
         foodElement.style.setProperty("top", `${food.y}px`);
         foodElement.style.setProperty("left", `${food.x}px`);
       }
@@ -363,10 +373,14 @@ class Game {
         if (ws.body.length > wsCurrentLength) {
           wsScoreElement.innerHTML = ws.body.length.toString();
           wsCurrentLength = ws.body.length; 
+          const newFoodRadius = randInRange(4, 12);
           food.setCoord(
             randInRange(30, mainWindowWidth - 100),
             randInRange(30, mainWindowHeight - 100)
           );
+          food.setRadius(newFoodRadius);
+          foodElement.style.setProperty("width", `${food.radius * 2}px`);
+          foodElement.style.setProperty("height", `${food.radius * 2}px`);
           foodElement.style.setProperty("top", `${food.y}px`);
           foodElement.style.setProperty("left", `${food.x}px`);
         }
