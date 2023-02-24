@@ -400,7 +400,7 @@ class Game {
       ws.checkDirection(); 
       renderSnakeDots(fs, fs.snakeElement);
       renderSnakeDots(ws, ws.snakeElement); 
-    }, 100);
+    }, 80);
   }
 }
 
